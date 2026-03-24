@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Generator</title>
+  <script src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      color: #16213e;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #0f3460;
+      border-bottom: 2px solid #e8ecf1;
+      padding-bottom: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: #444;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #0f3460;
+      box-shadow: 0 0 0 3px rgba(15,52,96,0.1);
+    }
+
+    textarea { resize: vertical; min-height: 60px; }
+
+    .dynamic-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .dynamic-row input { flex: 1; }
+
+    .dynamic-row input.price-input { max-width: 140px; text-align: right; }
+
+    .btn-remove {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .btn-remove:hover { background: #dc2626; }
+
+    .btn-add {
+      background: none;
+      border: 1px dashed #9ca3af;
+      border-radius: 8px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add:hover {
+      border-color: #0f3460;
+      color: #0f3460;
+    }
+
+    .total-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 2px solid #e8ecf1;
+      margin-top: 1rem;
+    }
+
+    .total-section .total-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f3460;
+    }
+
+    .total-section .total-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #16213e;
+    }
+
+    .currency-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .currency-row select { max-width: 200px; }
+
+    .btn-generate {
+      display: block;
+      width: 100%;
+      padding: 0.85rem;
+      background: #0f3460;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-generate:hover { background: #16213e; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Invoice Generator</h1>
+
+    <!-- Invoice Details -->
+    <div class="card">
+      <h2>Invoice Details</h2>
+      <div class="form-group">
+        <label for="invoiceNumber">Invoice Number</label>
+        <input type="text" id="invoiceNumber" placeholder="INV-001">
+      </div>
+      <div style="display:flex; gap:0.75rem">
+        <div class="form-group" style="flex:1">
+          <label for="createdDate">Created Date</label>
+          <input type="date" id="createdDate">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label for="dueDate">Due Date</label>
+          <input type="date" id="dueDate">
+        </div>
+      </div>
+    </div>
+
+    <!-- Company Info -->
+    <div class="card">
+      <h2>Your Company</h2>
+      <div class="form-group">
+        <label for="companyName">Company Name</label>
+        <input type="text" id="companyName" placeholder="Acme Corp">
+      </div>
+      <div class="form-group">
+        <label for="companyAddress">Address</label>
+        <textarea id="companyAddress" placeholder="123 Main St, City, Country"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="companyEmail">Email Address</label>
+        <input type="email" id="companyEmail" placeholder="billing@acme.com">
+      </div>
+    </div>
+
+    <!-- Client Info -->
+    <div class="card">
+      <h2>Client</h2>
+      <div class="form-group">
+        <label for="clientName">Client Name</label>
+        <input type="text" id="clientName" placeholder="Client Inc">
+      </div>
+      <div class="form-group">
+        <label for="clientAddress">Address</label>
+        <textarea id="clientAddress" placeholder="456 Oak Ave, City, Country"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="clientEmail">Email Address</label>
+        <input type="email" id="clientEmail" placeholder="accounts@client.com">
+      </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="card">
+      <h2>Payment Method(s)</h2>
+      <div class="form-group">
+        <label for="paymentMethodSelect">Method</label>
+        <select id="paymentMethodSelect">
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Credit Card">Credit Card</option>
+          <option value="PayPal">PayPal</option>
+          <option value="Stripe">Stripe</option>
+          <option value="Wise">Wise</option>
+          <option value="Cash">Cash</option>
+          <option value="Check">Check</option>
+          <option value="Cryptocurrency">Cryptocurrency</option>
+          <option value="PIX">PIX</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div id="paymentFields">
+        <div class="dynamic-row">
+          <input type="text" placeholder="Field name (e.g. Account Number)" class="pay-key">
+          <input type="text" placeholder="Value" class="pay-value">
+          <button class="btn-remove" onclick="removeRow(this)">&times;</button>
+        </div>
+      </div>
+      <button class="btn-add" onclick="addPaymentField()">+ Add Field</button>
+    </div>
+
+    <!-- Items -->
+    <div class="card">
+      <h2>Items</h2>
+      <div class="currency-row">
+        <label for="currency" style="margin-bottom:0">Currency</label>
+        <select id="currency">
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (&euro;)</option>
+          <option value="GBP">GBP (&pound;)</option>
+          <option value="BRL">BRL (R$)</option>
+          <option value="CAD">CAD (C$)</option>
+          <option value="AUD">AUD (A$)</option>
+          <option value="JPY">JPY (&yen;)</option>
+          <option value="CHF">CHF (Fr)</option>
+          <option value="CNY">CNY (&yen;)</option>
+          <option value="INR">INR (&rupee;)</option>
+          <option value="MXN">MXN ($)</option>
+        </select>
+      </div>
+      <div id="itemFields">
+        <div class="dynamic-row">
+          <input type="text" placeholder="Item description" class="item-desc">
+          <input type="number" step="0.01" min="0" placeholder="0.00" class="item-price price-input" oninput="updateTotal()">
+          <button class="btn-remove" onclick="removeRow(this); updateTotal()">&times;</button>
+        </div>
+      </div>
+      <button class="btn-add" onclick="addItem()">+ Add Item</button>
+      <div class="total-section">
+        <span class="total-label">Total</span>
+        <span class="total-value" id="totalDisplay">0.00</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+      <h2>Notes / Terms</h2>
+      <div class="form-group">
+        <label for="notes">Optional notes, payment terms, or conditions</label>
+        <textarea id="notes" placeholder="e.g. Payment due within 30 days of invoice date. Late payments subject to 2% monthly interest."></textarea>
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <button class="btn-generate" onclick="generatePDF()">Generate Invoice PDF</button>
+  </div>
+
+  <script>
+    const CURRENCY_SYMBOLS = {
+      USD: '$', EUR: '\u20AC', GBP: '\u00A3', BRL: 'R$', CAD: 'C$',
+      AUD: 'A$', JPY: '\u00A5', CHF: 'Fr', CNY: '\u00A5', INR: '\u20B9', MXN: '$'
+    };
+
+    function addPaymentField() {
+      const container = document.getElementById('paymentFields');
+      const row = document.createElement('div');
+      row.className = 'dynamic-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Field name" class="pay-key">
+        <input type="text" placeholder="Value" class="pay-value">
+        <button class="btn-remove" onclick="removeRow(this)">&times;</button>`;
+      container.appendChild(row);
+    }
+
+    function addItem() {
+      const container = document.getElementById('itemFields');
+      const row = document.createElement('div');
+      row.className = 'dynamic-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Item description" class="item-desc">
+        <input type="number" step="0.01" min="0" placeholder="0.00" class="item-price price-input" oninput="updateTotal()">
+        <button class="btn-remove" onclick="removeRow(this); updateTotal()">&times;</button>`;
+      container.appendChild(row);
+    }
+
+    function removeRow(btn) {
+      btn.parentElement.remove();
+    }
+
+    function updateTotal() {
+      const prices = document.querySelectorAll('.item-price');
+      let total = 0;
+      prices.forEach(p => { total += parseFloat(p.value) || 0; });
+      const sym = CURRENCY_SYMBOLS[document.getElementById('currency').value] || '';
+      document.getElementById('totalDisplay').textContent = sym + ' ' + total.toFixed(2);
+    }
+
+    document.getElementById('currency').addEventListener('change', updateTotal);
+
+    function saveFormData() {
+      const data = {
+        invoiceNumber: document.getElementById('invoiceNumber').value,
+        createdDate: document.getElementById('createdDate').value,
+        dueDate: document.getElementById('dueDate').value,
+        companyName: document.getElementById('companyName').value,
+        companyAddress: document.getElementById('companyAddress').value,
+        companyEmail: document.getElementById('companyEmail').value,
+        clientName: document.getElementById('clientName').value,
+        clientAddress: document.getElementById('clientAddress').value,
+        clientEmail: document.getElementById('clientEmail').value,
+        paymentMethod: document.getElementById('paymentMethodSelect').value,
+        currency: document.getElementById('currency').value,
+        notes: document.getElementById('notes').value,
+        paymentFields: [],
+        items: []
+      };
+      document.querySelectorAll('#paymentFields .dynamic-row').forEach(row => {
+        data.paymentFields.push({
+          key: row.querySelector('.pay-key').value,
+          val: row.querySelector('.pay-value').value
+        });
+      });
+      document.querySelectorAll('#itemFields .dynamic-row').forEach(row => {
+        data.items.push({
+          desc: row.querySelector('.item-desc').value,
+          price: row.querySelector('.item-price').value
+        });
+      });
+      localStorage.setItem('invoiceFormData', JSON.stringify(data));
+    }
+
+    function loadFormData() {
+      const raw = localStorage.getItem('invoiceFormData');
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        document.getElementById('invoiceNumber').value = data.invoiceNumber || '';
+        document.getElementById('createdDate').value = data.createdDate || '';
+        document.getElementById('dueDate').value = data.dueDate || '';
+        document.getElementById('companyName').value = data.companyName || '';
+        document.getElementById('companyAddress').value = data.companyAddress || '';
+        document.getElementById('companyEmail').value = data.companyEmail || '';
+        document.getElementById('clientName').value = data.clientName || '';
+        document.getElementById('clientAddress').value = data.clientAddress || '';
+        document.getElementById('clientEmail').value = data.clientEmail || '';
+        document.getElementById('paymentMethodSelect').value = data.paymentMethod || 'Bank Transfer';
+        document.getElementById('currency').value = data.currency || 'USD';
+        document.getElementById('notes').value = data.notes || '';
+
+        // Restore payment fields
+        if (data.paymentFields && data.paymentFields.length > 0) {
+          const container = document.getElementById('paymentFields');
+          container.innerHTML = '';
+          data.paymentFields.forEach(pf => {
+            const row = document.createElement('div');
+            row.className = 'dynamic-row';
+            row.innerHTML = `
+              <input type="text" placeholder="Field name" class="pay-key" value="">
+              <input type="text" placeholder="Value" class="pay-value" value="">
+              <button class="btn-remove" onclick="removeRow(this)">&times;</button>`;
+            container.appendChild(row);
+            row.querySelector('.pay-key').value = pf.key || '';
+            row.querySelector('.pay-value').value = pf.val || '';
+          });
+        }
+
+        // Restore items
+        if (data.items && data.items.length > 0) {
+          const container = document.getElementById('itemFields');
+          container.innerHTML = '';
+          data.items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'dynamic-row';
+            row.innerHTML = `
+              <input type="text" placeholder="Item description" class="item-desc" value="">
+              <input type="number" step="0.01" min="0" placeholder="0.00" class="item-price price-input" oninput="updateTotal()" value="">
+              <button class="btn-remove" onclick="removeRow(this); updateTotal()">&times;</button>`;
+            container.appendChild(row);
+            row.querySelector('.item-desc').value = item.desc || '';
+            row.querySelector('.item-price').value = item.price || '';
+          });
+        }
+
+        updateTotal();
+      } catch (e) {
+        // Ignore corrupt data
+      }
+    }
+
+    loadFormData();
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const companyName = document.getElementById('companyName').value.trim();
+      const companyAddress = document.getElementById('companyAddress').value.trim();
+      const companyEmail = document.getElementById('companyEmail').value.trim();
+      const clientName = document.getElementById('clientName').value.trim();
+      const clientAddress = document.getElementById('clientAddress').value.trim();
+      const clientEmail = document.getElementById('clientEmail').value.trim();
+      const paymentMethod = document.getElementById('paymentMethodSelect').value;
+      const currencyCode = document.getElementById('currency').value;
+      const sym = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+
+      // Collect payment fields
+      const paymentDetails = [];
+      document.querySelectorAll('#paymentFields .dynamic-row').forEach(row => {
+        const key = row.querySelector('.pay-key').value.trim();
+        const val = row.querySelector('.pay-value').value.trim();
+        if (key && val) paymentDetails.push({ key, val });
+      });
+
+      // Collect items
+      const items = [];
+      let total = 0;
+      document.querySelectorAll('#itemFields .dynamic-row').forEach(row => {
+        const desc = row.querySelector('.item-desc').value.trim();
+        const price = parseFloat(row.querySelector('.item-price').value) || 0;
+        if (desc) {
+          items.push({ desc, price });
+          total += price;
+        }
+      });
+
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!companyName && !clientName && items.length === 0) {
+        alert('Please fill in at least some invoice details.');
+        return;
+      }
+
+      const invoiceNum = document.getElementById('invoiceNumber').value.trim() || 'N/A';
+      const createdDate = document.getElementById('createdDate').value;
+      const dueDate = document.getElementById('dueDate').value;
+      const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+
+      // Colors
+      const accent = [15, 52, 96];
+      const accentLight = [230, 236, 245];
+      const dark = [30, 30, 46];
+      const mid = [100, 100, 115];
+      const light = [150, 150, 160];
+
+      // --- Top accent bar ---
+      doc.setFillColor(...accent);
+      doc.rect(0, 0, pageWidth, 6, 'F');
+
+      let y = 22;
+
+      // --- Header: INVOICE title ---
+      doc.setFontSize(28);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...accent);
+      doc.text('INVOICE', margin, y);
+
+      // --- Invoice meta (right side) ---
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...mid);
+      let hy = 14;
+      doc.text('INVOICE #', pageWidth - margin - 40, hy);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...dark);
+      doc.setFontSize(10);
+      doc.text(invoiceNum, pageWidth - margin, hy, { align: 'right' });
+      hy += 7;
+      if (createdDate) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...mid);
+        doc.text('DATE', pageWidth - margin - 40, hy);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...dark);
+        doc.setFontSize(10);
+        doc.text(formatDate(createdDate), pageWidth - margin, hy, { align: 'right' });
+        hy += 7;
+      }
+      if (dueDate) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...mid);
+        doc.text('DUE DATE', pageWidth - margin - 40, hy);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...dark);
+        doc.setFontSize(10);
+        doc.text(formatDate(dueDate), pageWidth - margin, hy, { align: 'right' });
+        hy += 7;
+      }
+
+      y = Math.max(y, hy) + 10;
+
+      // --- Divider ---
+      doc.setDrawColor(...accentLight);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 12;
+
+      // --- From / To columns ---
+      const colLeftX = margin;
+      const colRightX = pageWidth / 2 + 10;
+      const colW = contentWidth / 2 - 10;
+
+      function printContactBlock(x, maxW, label, name, address, email, startY) {
+        let cy = startY;
+        // Section label
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...mid);
+        doc.text(label, x, cy);
+        cy += 6;
+        // Name (prominent)
+        if (name) {
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...dark);
+          doc.text(name, x, cy);
+          cy += 6;
+        }
+        // Address
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...mid);
+        if (address) {
+          const lines = doc.splitTextToSize(address, maxW);
+          doc.text(lines, x, cy);
+          cy += lines.length * 4.5;
+        }
+        // Email
+        if (email) {
+          doc.setTextColor(...accent);
+          doc.text(email, x, cy);
+          cy += 5;
+        }
+        return cy;
+      }
+
+      const y1 = printContactBlock(colLeftX, colW, 'FROM', companyName, companyAddress, companyEmail, y);
+      const y2 = printContactBlock(colRightX, colW, 'BILL TO', clientName, clientAddress, clientEmail, y);
+      y = Math.max(y1, y2) + 10;
+
+      // --- Payment Method ---
+      if (paymentMethod || paymentDetails.length > 0) {
+        doc.setDrawColor(...accentLight);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 10;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...mid);
+        doc.text('PAYMENT METHOD', margin, y);
+        y += 6;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...dark);
+        doc.text(paymentMethod, margin, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...mid);
+        paymentDetails.forEach(pd => {
+          doc.text(`${pd.key}: `, margin, y);
+          doc.setTextColor(...dark);
+          doc.text(pd.val, margin + doc.getTextWidth(`${pd.key}: `), y);
+          doc.setTextColor(...mid);
+          y += 5;
+        });
+        y += 5;
+      }
+
+      // --- Items table ---
+      doc.setDrawColor(...accentLight);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 10;
+
+      // Table header
+      const tableHeaderH = 10;
+      doc.setFillColor(...accent);
+      doc.roundedRect(margin, y - 1, contentWidth, tableHeaderH, 1, 1, 'F');
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('#', margin + 4, y + 5);
+      doc.text('DESCRIPTION', margin + 14, y + 5);
+      doc.text('AMOUNT', pageWidth - margin - 4, y + 5, { align: 'right' });
+      y += tableHeaderH + 4;
+
+      // Table rows
+      const lineHeight = 5;
+      const rowPadding = 3.5;
+
+      items.forEach((item, i) => {
+        const descLines = doc.splitTextToSize(item.desc, contentWidth - 60);
+        const rowHeight = descLines.length * lineHeight + rowPadding * 2;
+
+        if (y + rowHeight > pageHeight - 40) {
+          doc.addPage();
+          // Re-draw accent bar on new page
+          doc.setFillColor(...accent);
+          doc.rect(0, 0, pageWidth, 3, 'F');
+          y = 15;
+        }
+
+        // Alternating row background
+        if (i % 2 === 0) {
+          doc.setFillColor(...accentLight);
+          doc.rect(margin, y - rowPadding, contentWidth, rowHeight, 'F');
+        }
+
+        // Row number
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...light);
+        doc.text(String(i + 1), margin + 4, y + 1);
+
+        // Description
+        doc.setFontSize(10);
+        doc.setTextColor(...dark);
+        doc.text(descLines, margin + 14, y + 1);
+
+        // Amount
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...dark);
+        doc.text(sym + ' ' + item.price.toFixed(2), pageWidth - margin - 4, y + 1, { align: 'right' });
+
+        // Bottom border
+        doc.setDrawColor(220, 225, 235);
+        doc.setLineWidth(0.2);
+        doc.line(margin, y - rowPadding + rowHeight, pageWidth - margin, y - rowPadding + rowHeight);
+
+        y += rowHeight;
+      });
+
+      y += 8;
+
+      // --- Total box ---
+      const totalBoxW = 75;
+      const totalBoxH = 14;
+      const totalBoxX = pageWidth - margin - totalBoxW;
+
+      // Total highlight box
+      doc.setFillColor(...accent);
+      doc.roundedRect(totalBoxX, y - 1, totalBoxW, totalBoxH, 2, 2, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL', totalBoxX + 5, y + 8);
+      doc.setFontSize(12);
+      doc.text(sym + ' ' + total.toFixed(2), pageWidth - margin - 5, y + 8, { align: 'right' });
+
+      y += totalBoxH + 15;
+
+      // --- Notes / Terms ---
+      if (notes) {
+        if (y > pageHeight - 50) {
+          doc.addPage();
+          doc.setFillColor(...accent);
+          doc.rect(0, 0, pageWidth, 3, 'F');
+          y = 15;
+        }
+        doc.setDrawColor(...accentLight);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 8;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...mid);
+        doc.text('NOTES / TERMS', margin, y);
+        y += 6;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...dark);
+        const noteLines = doc.splitTextToSize(notes, contentWidth);
+        doc.text(noteLines, margin, y);
+      }
+
+      // --- Bottom accent bar ---
+      doc.setFillColor(...accent);
+      doc.rect(0, pageHeight - 4, pageWidth, 4, 'F');
+
+      saveFormData();
+      const safeFilename = invoiceNum.replace(/[^a-zA-Z0-9_-]/g, '_');
+      doc.save(`invoice_${safeFilename}.pdf`);
+    }
+  </script>
+</body>
+</html>
