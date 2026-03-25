@@ -263,10 +263,6 @@
           <option value="CAD">CAD (C$)</option>
           <option value="AUD">AUD (A$)</option>
           <option value="JPY">JPY (&yen;)</option>
-          <option value="CHF">CHF (Fr)</option>
-          <option value="CNY">CNY (&yen;)</option>
-          <option value="INR">INR (&rupee;)</option>
-          <option value="MXN">MXN ($)</option>
         </select>
       </div>
       <div id="itemFields">
@@ -297,10 +293,7 @@
   </div>
 
   <script>
-    const CURRENCY_SYMBOLS = {
-      USD: '$', EUR: '\u20AC', GBP: '\u00A3', BRL: 'R$', CAD: 'C$',
-      AUD: 'A$', JPY: '\u00A5', CHF: 'Fr', CNY: '\u00A5', INR: '\u20B9', MXN: '$'
-    };
+    const CURRENCY_SYMBOLS = {USD: '$', EUR: '\u20AC', GBP: '\u00A3', BRL: 'R$', CAD: 'C$', AUD: 'A$', JPY: '\u00A5'};
 
     function addPaymentField() {
       const container = document.getElementById('paymentFields');
